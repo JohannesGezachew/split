@@ -1,0 +1,23 @@
+import { useEffect, useState } from 'react';
+import { useUser, User } from '../UserContext';
+import axios from 'axios';
+
+interface Expense {
+  id: number;
+  amount: number;
+export default function ExpenseHistory({ groupId }: { groupId?: number }) {
+  const user = useUser();
+  const [expenses, setExpenses] = useState([]);
+
+  useEffect(() => {
+    axios.get('/api/v1/expenses/history' + (groupId ? `?groupId=${groupId}` : ''), { headers: { 'x-telegram-id': user.telegramId } })
+      .then(res => setExpenses(res.data.expenses));
+  }, [user, groupId]);
+
+  return (
+    <div>
+      <h3>Expense History</h3>
+      <ul>{expenses.map((e: any) => <li key={e.id}>{e.amount} paid by {e.paidById} on {new Date(e.date).toLocaleDateString()} - {e.note}</li>)}</ul>
+    </div>
+  );
+} 
