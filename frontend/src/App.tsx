@@ -6,7 +6,8 @@ import GroupList from './components/GroupList';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseHistory from './components/ExpenseHistory';
 import DebtSummary from './components/DebtSummary';
-import { UserContext, User } from './UserContext';
+import { UserContext } from './UserContext';
+import type { User } from './UserContext';
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -14,7 +15,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // @ts-expect-error
+    // @ts-expect-error: Telegram WebApp is only available in Telegram Mini App
     const tg = window.Telegram?.WebApp
     const tgUser = tg?.initDataUnsafe?.user
     if (!tgUser) {
