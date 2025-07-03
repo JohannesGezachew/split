@@ -12,17 +12,23 @@ interface Expense {
 
 export default function ExpenseHistory({ groupId }: { groupId?: number }) {
   const user = useUser();
-  const [expenses, setExpenses] = useState([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
 
   useEffect(() => {
-    axios.get('/api/v1/expenses/history' + (groupId ? `?groupId=${groupId}` : ''), { headers: { 'x-telegram-id': user.telegramId } })
+    axios.get('/api/v1/expenses/history' + (groupId ? `?groupId=${groupId}` : ''), { headers: { 'x-telegram-id': user?.telegramId } })
       .then(res => setExpenses(res.data.expenses));
   }, [user, groupId]);
 
   return (
     <div>
       <h3>Expense History</h3>
-      <ul>{expenses.map((e: any) => <li key={e.id}>{e.amount} paid by {e.paidById} on {new Date(e.date).toLocaleDateString()} - {e.note}</li>)}</ul>
+      <ul>
+        {expenses.map((e) => (
+          <li key={e.id}>
+            {e.amount} paid by {e.paidById} on {new Date(e.date).toLocaleDateString()} - {e.note}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 } 
