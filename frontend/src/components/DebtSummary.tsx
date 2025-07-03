@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useUser } from '../UserContext';
-import type { User } from '../UserContext';
-import axios from 'axios';
+import api from '../api';;
 
 interface DebtDetail {
   id: number;
@@ -21,13 +20,13 @@ export default function DebtSummary() {
 
   useEffect(() => {
     if (!user) return;
-    axios.get('/api/v1/debts/ledger', { headers: { 'x-telegram-id': user.telegramId } })
+    api.get('/api/v1/debts/ledger', { headers: { 'x-telegram-id': user.telegramId } })
       .then(res => setLedger(res.data.ledger));
   }, [user]);
 
   const settle = (debtId: number) => {
     if (!user) return;
-    axios.post('/api/v1/debts/settle', { debtId }, { headers: { 'x-telegram-id': user.telegramId } })
+    api.post('/api/v1/debts/settle', { debtId }, { headers: { 'x-telegram-id': user.telegramId } })
       .then(() => setMsg('Settled!'));
   };
 

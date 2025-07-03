@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useUser } from '../UserContext';
 import type { User } from '../UserContext';
-import axios from 'axios';
+import api from '../api';;
 
 interface Friend {
   id: number;
@@ -29,31 +29,31 @@ export default function FriendList() {
 
   useEffect(() => {
     if (!user) return;
-    axios.get('/api/v1/friends/list', { headers: { 'x-telegram-id': user.telegramId } })
+    api.get('/api/v1/friends/list', { headers: { 'x-telegram-id': user.telegramId } })
       .then(res => setFriends(res.data.friends));
-    axios.get('/api/v1/friends/pending', { headers: { 'x-telegram-id': user.telegramId } })
+    api.get('/api/v1/friends/pending', { headers: { 'x-telegram-id': user.telegramId } })
       .then(res => setPending(res.data.pending));
   }, [user]);
 
   const handleSearch = () => {
     if (!user) return;
-    axios.get('/api/v1/users/search?username=' + search, { headers: { 'x-telegram-id': user.telegramId } })
+    api.get('/api/v1/users/search?username=' + search, { headers: { 'x-telegram-id': user.telegramId } })
       .then(res => setResults(res.data.users));
   };
 
   const sendRequest = (id: number) => {
     if (!user) return;
-    axios.post('/api/v1/friends/request', { toUserId: id }, { headers: { 'x-telegram-id': user.telegramId } });
+    api.post('/api/v1/friends/request', { toUserId: id }, { headers: { 'x-telegram-id': user.telegramId } });
   };
 
   const accept = (id: number) => {
     if (!user) return;
-    axios.post('/api/v1/friends/accept', { requestId: id }, { headers: { 'x-telegram-id': user.telegramId } });
+    api.post('/api/v1/friends/accept', { requestId: id }, { headers: { 'x-telegram-id': user.telegramId } });
   };
 
   const reject = (id: number) => {
     if (!user) return;
-    axios.post('/api/v1/friends/reject', { requestId: id }, { headers: { 'x-telegram-id': user.telegramId } });
+    api.post('/api/v1/friends/reject', { requestId: id }, { headers: { 'x-telegram-id': user.telegramId } });
   };
 
   if (!user) return null;

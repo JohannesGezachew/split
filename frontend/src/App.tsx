@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import axios from 'axios'
+import api from './api';
 import FriendList from './components/FriendList';
 import GroupList from './components/GroupList';
 import ExpenseForm from './components/ExpenseForm';
@@ -23,7 +23,7 @@ function App() {
       setLoading(false)
       return
     }
-    axios.post('/api/v1/auth/telegram', {
+    api.post('/api/v1/auth/telegram', {
       id: tgUser.id,
       username: tgUser.username,
       first_name: tgUser.first_name,

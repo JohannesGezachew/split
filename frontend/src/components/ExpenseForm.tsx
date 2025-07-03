@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useUser } from '../UserContext';
-import axios from 'axios';
+import api from '../api';;
 
 export default function ExpenseForm() {
   const user = useUser();
@@ -16,7 +16,7 @@ export default function ExpenseForm() {
     e.preventDefault();
     if (!user) return;
     try {
-      await axios.post('/api/v1/expenses/add', {
+      await api.post('/api/v1/expenses/add', {
         amount: parseFloat(amount),
         groupId: groupId ? Number(groupId) : undefined,
         splits: JSON.parse(splits),

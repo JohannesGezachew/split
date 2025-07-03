@@ -5,10 +5,10 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://your-backend-url.com/api/$1"
+      "destination": "https://split-fqr2.onrender.com/api/$1"
     }
   ],
   "env": {
-    "VITE_API_URL": "https://your-backend-url.com"
+    "VITE_API_URL": "https://split-fqr2.onrender.com"
   }
 } 

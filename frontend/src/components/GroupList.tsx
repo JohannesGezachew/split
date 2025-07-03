@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useUser } from '../UserContext';
 import type { User } from '../UserContext';
-import axios from 'axios';
+import api from '../api';;
 
 interface Group {
   group: {
@@ -23,14 +23,14 @@ export default function GroupList() {
 
   useEffect(() => {
     if (!user) return;
-    axios.get('/api/v1/groups/list', { headers: { 'x-telegram-id': user.telegramId } })
+    api.get('/api/v1/groups/list', { headers: { 'x-telegram-id': user.telegramId } })
       .then(res => setGroups(res.data.groups));
   }, [user]);
 
   const showMembers = (groupId: number) => {
     if (!user) return;
     setSelected(groupId);
-    axios.get(`/api/v1/groups/${groupId}/members`, { headers: { 'x-telegram-id': user.telegramId } })
+    api.get(`/api/v1/groups/${groupId}/members`, { headers: { 'x-telegram-id': user.telegramId } })
       .then(res => setMembers(res.data.members));
   };
 
