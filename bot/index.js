@@ -53,4 +53,16 @@ bot.onText(/\/groups/, (msg) => {
   bot.sendMessage(chatId, 'Groups: (fetch from backend)');
 });
 
-console.log('Bot is running...'); 
+console.log('Bot is running...');
+
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000; // Use Render's port or default to 3000
+
+app.get('/', (req, res) => {
+  res.send('Bot is alive!');
+});
+
+app.listen(port, () => {
+  console.log(`HTTP server listening on port ${port}`);
+}); 
