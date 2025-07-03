@@ -6,8 +6,9 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "dev": "nodemon src/index.ts",
-    "build": "tsc",
+    "build": "tsc && npm run postbuild",
     "start:dist": "node dist/index.js",
+    "postbuild": "cp -r src/generated dist/generated",
     "postinstall": "prisma generate && prisma migrate deploy",
     "lint": "eslint --fix src test",
     "test": "jest",
