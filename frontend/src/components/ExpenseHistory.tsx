@@ -5,6 +5,11 @@ import axios from 'axios';
 interface Expense {
   id: number;
   amount: number;
+  paidById: number;
+  date: string;
+  note?: string;
+}
+
 export default function ExpenseHistory({ groupId }: { groupId?: number }) {
   const user = useUser();
   const [expenses, setExpenses] = useState([]);
