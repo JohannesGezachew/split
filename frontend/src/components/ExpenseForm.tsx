@@ -1,5 +1,7 @@
-import { useState, FormEvent } from 'react';
-import { useUser, User } from '../UserContext';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { useUser } from '../UserContext';
+import type { User } from '../UserContext';
 import axios from 'axios';
 
 export default function ExpenseForm() {
@@ -13,6 +15,7 @@ export default function ExpenseForm() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!user) return;
     try {
       await axios.post('/api/v1/expenses/add', {
         amount: parseFloat(amount),
@@ -26,6 +29,8 @@ export default function ExpenseForm() {
       setMsg('Failed to add expense.');
     }
   };
+
+  if (!user) return null;
 
   return (
     <form onSubmit={handleSubmit}>

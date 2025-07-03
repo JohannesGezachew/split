@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useUser, User } from '../UserContext';
+import { useUser } from '../UserContext';
+import type { User } from '../UserContext';
 import axios from 'axios';
 
 interface Expense {
@@ -15,9 +16,12 @@ export default function ExpenseHistory({ groupId }: { groupId?: number }) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   useEffect(() => {
-    axios.get('/api/v1/expenses/history' + (groupId ? `?groupId=${groupId}` : ''), { headers: { 'x-telegram-id': user?.telegramId } })
+    if (!user) return;
+    axios.get('/api/v1/expenses/history' + (groupId ? `?groupId=${groupId}` : ''), { headers: { 'x-telegram-id': user.telegramId } })
       .then(res => setExpenses(res.data.expenses));
   }, [user, groupId]);
+
+  if (!user) return null;
 
   return (
     <div>
