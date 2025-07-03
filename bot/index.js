@@ -6,8 +6,7 @@ const token = process.env.BOT_TOKEN;
 console.log('Loaded token:', process.env.BOT_TOKEN);
 
 
-// Replace with your deployed Mini App URL
-const MINI_APP_URL = 'https://0f4c-196-188-252-101.ngrok-free.app/';
+// MINI_APP_URL is loaded from environment variables
 
 const bot = new TelegramBot(token, { polling: true });
 
