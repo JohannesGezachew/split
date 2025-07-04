@@ -9,15 +9,13 @@ if (!token) {
 }
 console.log('Telegram bot token loaded successfully.');
 
+// MINI_APP_URL is loaded from environment variables
+const MINI_APP_URL = process.env.MINI_APP_URL;
+
 if (!MINI_APP_URL) {
   console.error('MINI_APP_URL is not set!');
   process.exit(1);
 }
-
-
-// MINI_APP_URL is loaded from environment variables
-
-const MINI_APP_URL = process.env.MINI_APP_URL;
 
 const bot = new TelegramBot(token, { polling: true });
 
