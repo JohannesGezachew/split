@@ -1,0 +1,1 @@
+fix: Remove hardcoded MINI_APP_URL in bot/index.js

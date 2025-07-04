@@ -3,10 +3,21 @@ require('dotenv').config();
 
 // Load token from environment variable
 const token = process.env.BOT_TOKEN;
-console.log('Loaded token:', process.env.BOT_TOKEN);
+if (!token) {
+  console.error('BOT_TOKEN is not set!');
+  process.exit(1);
+}
+console.log('Telegram bot token loaded successfully.');
+
+if (!MINI_APP_URL) {
+  console.error('MINI_APP_URL is not set!');
+  process.exit(1);
+}
 
 
 // MINI_APP_URL is loaded from environment variables
+
+const MINI_APP_URL = process.env.MINI_APP_URL;
 
 const bot = new TelegramBot(token, { polling: true });
 
