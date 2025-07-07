@@ -42,9 +42,10 @@ function App() {
         setUser(res.data.user)
         setLoading(false)
       })
-      .catch(() => {
-        setError('Failed to authenticate with backend.')
-        setLoading(false)
+      .catch((err) => {
+        console.error('Backend authentication error:', err);
+        setError('Failed to authenticate with backend. Check console for details.');
+        setLoading(false);
       })
   }, [])
 
