@@ -16,12 +16,21 @@ function App() {
 
   useEffect(() => {
     // @ts-expect-error: Telegram WebApp is only available in Telegram Mini App
-    const tg = window.Telegram?.WebApp
-    const tgUser = tg?.initDataUnsafe?.user
+    const tg = window.Telegram?.WebApp;
+
+    if (!tg) {
+      setError('Not running inside Telegram. Please open the app from Telegram.');
+      setLoading(false);
+      return;
+    }
+
+    tg.ready(); // Ensure the WebApp is ready
+
+    const tgUser = tg.initDataUnsafe?.user;
     if (!tgUser) {
-      setError('Not running inside Telegram or user info not available.')
-      setLoading(false)
-      return
+      setError('Telegram user info not available. Please try again from Telegram.');
+      setLoading(false);
+      return;
     }
     api.post('/api/v1/users/upsert', {
       telegramId: tgUser.id,
