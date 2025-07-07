@@ -28,7 +28,7 @@ function App() {
       username: tgUser.username,
       firstName: tgUser.first_name,
       lastName: tgUser.last_name,
-    })
+    }, { headers: { 'x-telegram-id': tgUser.id } })
       .then(res => {
         setUser(res.data.user)
         setLoading(false)
