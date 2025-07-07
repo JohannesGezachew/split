@@ -33,7 +33,7 @@ function App() {
       return;
     }
     api.post('/api/v1/users/upsert', {
-      telegramId: tgUser.id,
+      telegramId: tgUser.id.toString(),
       username: tgUser.username,
       firstName: tgUser.first_name,
       lastName: tgUser.last_name,
