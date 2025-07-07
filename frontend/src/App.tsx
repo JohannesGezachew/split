@@ -23,11 +23,11 @@ function App() {
       setLoading(false)
       return
     }
-    api.post('/api/v1/auth/telegram', {
-      id: tgUser.id,
+    api.post('/api/v1/users/upsert', {
+      telegramId: tgUser.id,
       username: tgUser.username,
-      first_name: tgUser.first_name,
-      last_name: tgUser.last_name,
+      firstName: tgUser.first_name,
+      lastName: tgUser.last_name,
     })
       .then(res => {
         setUser(res.data.user)

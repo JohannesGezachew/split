@@ -8,22 +8,21 @@ import api from './api';
 import MessageResponse from './interfaces/MessageResponse';
 import { authenticateUser } from './middlewares/auth';
 
- 
-
 const app = express();
 
 app.use(morgan('dev'));
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+}));
 app.use(express.json());
 
-app.get<{}, MessageResponse>('/', (req, res) => {
+app.get<Record<string, never>, MessageResponse>('/', (req, res) => {
   res.json({
     message: '🦄🌈✨👋🌎🌍🌏✨🌈🦄',
   });
 });
 
-app.use(middlewares.authenticateUser);
 app.use('/api/v1', api);
 
 app.use(middlewares.notFound);

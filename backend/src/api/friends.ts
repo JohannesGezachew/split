@@ -1,12 +1,16 @@
-import express from 'express';
-import { PrismaClient, FriendshipStatus } from '../generated/prisma';
+import express, { Request, Response } from 'express';
+import { PrismaClient, User } from '../generated/prisma';
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
+interface FriendRequest {
+  toUserId: number;
+}
+
 // Send friend request
-router.post('/request', async (req, res) => {
-  const user = (req as any).user;
+router.post('/request', async (req: Request<object, object, FriendRequest>, res: Response) => {
+  const user = (req as Request & { user: User }).user;
   const { toUserId } = req.body;
   if (!toUserId) return res.status(400).json({ error: 'Missing toUserId' });
   if (user.id === toUserId) return res.status(400).json({ error: 'Cannot friend yourself' });
@@ -31,9 +35,13 @@ router.post('/request', async (req, res) => {
   }
 });
 
+interface RespondRequest {
+  requestId: number;
+}
+
 // Accept friend request
-router.post('/accept', async (req, res) => {
-  const user = (req as any).user;
+router.post('/accept', async (req: Request<object, object, RespondRequest>, res: Response) => {
+  const user = (req as Request & { user: User }).user;
   const { requestId } = req.body;
   if (!requestId) return res.status(400).json({ error: 'Missing requestId' });
   try {
@@ -48,8 +56,8 @@ router.post('/accept', async (req, res) => {
 });
 
 // Reject friend request
-router.post('/reject', async (req, res) => {
-  const user = (req as any).user;
+router.post('/reject', async (req: Request<object, object, RespondRequest>, res: Response) => {
+  const user = (req as Request & { user: User }).user;
   const { requestId } = req.body;
   if (!requestId) return res.status(400).json({ error: 'Missing requestId' });
   try {
@@ -64,8 +72,8 @@ router.post('/reject', async (req, res) => {
 });
 
 // List friends
-router.get('/list', async (req, res) => {
-  const user = (req as any).user;
+router.get('/list', async (req: Request, res: Response) => {
+  const user = (req as Request & { user: User }).user;
   const friends = await prisma.friendship.findMany({
     where: {
       OR: [
@@ -82,8 +90,8 @@ router.get('/list', async (req, res) => {
 });
 
 // List pending requests
-router.get('/pending', async (req, res) => {
-  const user = (req as any).user;
+router.get('/pending', async (req: Request, res: Response) => {
+  const user = (req as Request & { user: User }).user;
   const pending = await prisma.friendship.findMany({
     where: {
       addresseeId: user.id,

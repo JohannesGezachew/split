@@ -1,33 +1,41 @@
 import { useEffect, useState } from 'react';
 import { useUser } from '../UserContext';
-import api from '../api';;
+import api from '../api';
 
-interface DebtDetail {
+interface Debt {
   id: number;
   amount: number;
   settled: boolean;
-}
-
-interface LedgerInfo {
-  total: number;
-  details: DebtDetail[];
+  fromUserId: number;
+  toUserId: number;
 }
 
 export default function DebtSummary() {
   const user = useUser();
-  const [ledger, setLedger] = useState<Record<string, LedgerInfo>>({});
-  const [msg, setMsg] = useState('');
+  const [debts, setDebts] = useState<Debt[]>([]);
+  const [netDebts, setNetDebts] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
     if (!user) return;
-    api.get('/api/v1/debts/ledger', { headers: { 'x-telegram-id': user.telegramId } })
-      .then(res => setLedger(res.data.ledger));
+    api.get('/api/v1/debts/summary', { headers: { 'x-telegram-id': user.telegramId } })
+      .then(res => {
+        setDebts(res.data.debts);
+        setNetDebts(res.data.netDebts);
+      });
   }, [user]);
 
-  const settle = (debtId: number) => {
+  const settleUp = (otherUserId: number) => {
     if (!user) return;
-    api.post('/api/v1/debts/settle', { debtId }, { headers: { 'x-telegram-id': user.telegramId } })
-      .then(() => setMsg('Settled!'));
+    const debtsToSettle = debts.filter((d: Debt) => d.fromUserId === user.id && d.toUserId === otherUserId && !d.settled);
+    Promise.all(debtsToSettle.map((d: Debt) => api.post('/api/v1/debts/settle', { debtId: d.id }, { headers: { 'x-telegram-id': user.telegramId } })))
+      .then(() => {
+        // Refresh debts
+        api.get('/api/v1/debts/summary', { headers: { 'x-telegram-id': user.telegramId } })
+          .then(res => {
+            setDebts(res.data.debts);
+            setNetDebts(res.data.netDebts);
+          });
+      });
   };
 
   if (!user) return null;
@@ -35,15 +43,14 @@ export default function DebtSummary() {
   return (
     <div>
       <h3>Debt Summary</h3>
-      {Object.entries(ledger).map(([userId, info]) => (
-        <div key={userId}>
-          <b>User {userId}:</b> {info.total}
-          <ul>
-            {info.details.map((d) => <li key={d.id}>{d.amount} {d.settled ? '(settled)' : <button onClick={() => settle(d.id)}>Settle</button>}</li>)}
-          </ul>
-        </div>
-      ))}
-      <div>{msg}</div>
+      <ul>
+        {Object.entries(netDebts).map(([otherUserId, amount]) => (
+          <li key={otherUserId}>
+            User {otherUserId}: {(amount as number).toFixed(2)}
+            {(amount as number) > 0 && <button onClick={() => settleUp(Number(otherUserId))}>Settle Up</button>}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 } 

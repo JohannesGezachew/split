@@ -1,18 +1,45 @@
-import express from 'express';
-import { PrismaClient } from '../generated/prisma';
+import express, { Request, Response } from 'express';
+import { PrismaClient, User } from '../generated/prisma';
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// GET /user/me - get current user info
-router.get('/me', (req, res) => {
-  res.json({ user: (req as any).user });
+interface UpsertUserRequest {
+  telegramId: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+}
+
+// POST /users/upsert - create or update user
+router.post('/upsert', async (req: Request<object, object, UpsertUserRequest>, res: Response) => {
+  const { telegramId, username, firstName, lastName } = req.body;
+  if (!telegramId) return res.status(400).json({ error: 'Missing telegramId' });
+
+  const user = await prisma.user.upsert({
+    where: { telegramId: BigInt(telegramId) },
+    update: { username, firstName, lastName },
+    create: { telegramId: BigInt(telegramId), username, firstName, lastName },
+  });
+
+  res.json({ user });
 });
 
+// GET /user/me - get current user info
+router.get('/me', (req: Request, res: Response) => {
+  res.json({ user: (req as Request & { user: User }).user });
+});
+
+interface UpdateUserRequest {
+  username: string;
+  firstName: string;
+  lastName: string;
+}
+
 // PUT /user/me - update profile
-router.put('/me', async (req, res) => {
+router.put('/me', async (req: Request<object, object, UpdateUserRequest>, res: Response) => {
   const { username, firstName, lastName } = req.body;
-  const user = (req as any).user;
+  const user = (req as Request & { user: User }).user;
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: { username, firstName, lastName },

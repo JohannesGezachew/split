@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useUser } from '../UserContext';
-import api from '../api';;
+import api from '../api';
 
 interface Expense {
   id: number;

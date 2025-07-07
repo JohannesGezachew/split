@@ -1,12 +1,12 @@
-import express from 'express';
-import { PrismaClient } from '../generated/prisma';
+import express, { Request, Response } from 'express';
+import { PrismaClient, User, Debt } from '../generated/prisma';
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
 // Calculate debts for user
-router.get('/summary', async (req, res) => {
-  const user = (req as any).user;
+router.get('/summary', async (req: Request, res: Response) => {
+  const user = (req as Request & { user: User }).user;
   // Get all debts where user is involved
   const debts = await prisma.debt.findMany({
     where: {
@@ -14,15 +14,29 @@ router.get('/summary', async (req, res) => {
         { fromUserId: user.id },
         { toUserId: user.id },
       ],
+      settled: false,
     },
     include: { expense: true, toUser: true, fromUser: true },
   });
-  res.json({ debts });
+
+  // Smart debt reduction
+  const netDebts: { [key: number]: number } = {};
+  debts.forEach(debt => {
+    const otherUserId = debt.fromUserId === user.id ? debt.toUserId : debt.fromUserId;
+    const amount = debt.fromUserId === user.id ? debt.amount : -debt.amount;
+    netDebts[otherUserId] = (netDebts[otherUserId] || 0) + amount;
+  });
+
+  res.json({ debts, netDebts });
 });
 
+interface SettleDebtRequest {
+  debtId: number;
+}
+
 // Settle up (mark debts as paid)
-router.post('/settle', async (req, res) => {
-  const user = (req as any).user;
+router.post('/settle', async (req: Request<object, object, SettleDebtRequest>, res: Response) => {
+  const user = (req as Request & { user: User }).user;
   const { debtId } = req.body;
   if (!debtId) return res.status(400).json({ error: 'Missing debtId' });
   try {
@@ -37,8 +51,8 @@ router.post('/settle', async (req, res) => {
 });
 
 // Ledger breakdown (all debts, grouped)
-router.get('/ledger', async (req, res) => {
-  const user = (req as any).user;
+router.get('/ledger', async (req: Request, res: Response) => {
+  const user = (req as Request & { user: User }).user;
   const debts = await prisma.debt.findMany({
     where: {
       OR: [
@@ -49,7 +63,7 @@ router.get('/ledger', async (req, res) => {
     include: { expense: true, toUser: true, fromUser: true },
   });
   // Group by user
-  const ledger: any = {};
+  const ledger: { [key: number]: { total: number, details: Debt[] } } = {};
   debts.forEach((d) => {
     const key = d.fromUserId === user.id ? d.toUserId : d.fromUserId;
     if (!ledger[key]) ledger[key] = { total: 0, details: [] };

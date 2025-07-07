@@ -6,10 +6,11 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "dev": "nodemon src/index.ts",
-    "build": "tsc && npm run postbuild",
+    "build": "tsc",
     "start:dist": "node dist/index.js",
-    "postbuild": "cp -r src/generated dist/generated",
-    "postinstall": "prisma generate && prisma migrate deploy",
+    
+    "prisma:deploy": "cross-env-shell \"prisma generate && prisma migrate deploy\"",
+    "postinstall": "node scripts/load-env-and-run.js",
     "lint": "eslint --fix src test",
     "test": "jest",
     "typecheck": "tsc --noEmit"
@@ -38,6 +39,8 @@
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^7.16.1",
     "@typescript-eslint/parser": "^7.16.1",
+    "cross-env": "^7.0.3",
+    "dotenv-cli": "^8.0.0",
     "eslint": "^8.57.0",
     "eslint-config-airbnb-typescript": "^18.0.0",
     "eslint-import-resolver-typescript": "^3.6.3",
@@ -48,6 +51,6 @@
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.8.3"
   }
 }
