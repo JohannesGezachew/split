@@ -21,7 +21,12 @@ app.get<Record<string, never>, MessageResponse>('/', (req, res) => {
   });
 });
 
-app.use('/api/v1', authenticateUser, api);
+app.use('/api/v1', (req, res, next) => {
+  if (req.path === '/users/upsert') {
+    return next();
+  }
+  authenticateUser(req, res, next);
+}, api);
 
 app.use(middlewares.notFound);
 app.use(middlewares.errorHandler);

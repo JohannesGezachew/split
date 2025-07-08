@@ -13,16 +13,28 @@ interface UpsertUserRequest {
 
 // POST /users/upsert - create or update user
 router.post('/upsert', async (req: Request<object, object, UpsertUserRequest>, res: Response) => {
+  console.log('Received request to /users/upsert');
+  console.log('Request body:', req.body);
+  console.log('Request headers:', req.headers);
+
   const { telegramId, username, firstName, lastName } = req.body;
-  if (!telegramId) return res.status(400).json({ error: 'Missing telegramId' });
+  if (!telegramId) {
+    console.error('Missing telegramId in request body');
+    return res.status(400).json({ error: 'Missing telegramId' });
+  }
 
-  const user = await prisma.user.upsert({
-    where: { telegramId: BigInt(telegramId) },
-    update: { username, firstName, lastName },
-    create: { telegramId: BigInt(telegramId), username, firstName, lastName },
-  });
-
-  res.json({ user });
+  try {
+    const user = await prisma.user.upsert({
+      where: { telegramId: BigInt(telegramId) },
+      update: { username, firstName, lastName },
+      create: { telegramId: BigInt(telegramId), username, firstName, lastName },
+    });
+    console.log('Successfully upserted user:', user);
+    res.json({ user });
+  } catch (error) {
+    console.error('Error during user upsert:', error);
+    res.status(500).json({ error: 'An internal error occurred during user upsert.' });
+  }
 });
 
 // GET /user/me - get current user info
