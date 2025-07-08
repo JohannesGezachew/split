@@ -4,27 +4,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const prisma_1 = require("../generated/prisma");
-const prisma = new prisma_1.PrismaClient();
+const zod_1 = require("zod");
+const db_1 = __importDefault(require("../db"));
+const HttpError_1 = __importDefault(require("../HttpError"));
+const validation_1 = require("../middlewares/validation");
 const router = express_1.default.Router();
+const friendRequestSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        toUserId: zod_1.z.number(),
+    }),
+});
 // Send friend request
-router.post('/request', async (req, res) => {
-    const user = req.user;
-    const { toUserId } = req.body;
-    if (!toUserId)
-        return res.status(400).json({ error: 'Missing toUserId' });
-    if (user.id === toUserId)
-        return res.status(400).json({ error: 'Cannot friend yourself' });
+router.post('/request', (0, validation_1.validate)(friendRequestSchema), async (req, res, next) => {
     try {
-        const existing = await prisma.friendship.findFirst({
+        const user = req.user;
+        const { toUserId } = req.body;
+        if (user.id === toUserId)
+            throw new HttpError_1.default(400, 'Cannot friend yourself');
+        const existing = await db_1.default.friendship.findFirst({
             where: {
                 requesterId: user.id,
                 addresseeId: toUserId,
             },
         });
         if (existing)
-            return res.status(400).json({ error: 'Request already exists' });
-        const friendship = await prisma.friendship.create({
+            throw new HttpError_1.default(400, 'Request already exists');
+        const friendship = await db_1.default.friendship.create({
             data: {
                 requesterId: user.id,
                 addresseeId: toUserId,
@@ -34,72 +39,83 @@ router.post('/request', async (req, res) => {
         res.json({ friendship });
     }
     catch (e) {
-        res.status(500).json({ error: 'Failed to send request' });
+        next(e);
     }
 });
+const respondRequestSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        requestId: zod_1.z.number(),
+    }),
+});
 // Accept friend request
-router.post('/accept', async (req, res) => {
-    const user = req.user;
-    const { requestId } = req.body;
-    if (!requestId)
-        return res.status(400).json({ error: 'Missing requestId' });
+router.patch('/accept', (0, validation_1.validate)(respondRequestSchema), async (req, res, next) => {
     try {
-        const friendship = await prisma.friendship.update({
+        const user = req.user;
+        const { requestId } = req.body;
+        const friendship = await db_1.default.friendship.update({
             where: { id: requestId, addresseeId: user.id },
             data: { status: 'ACCEPTED' },
         });
         res.json({ friendship });
     }
     catch (e) {
-        res.status(500).json({ error: 'Failed to accept request' });
+        next(e);
     }
 });
 // Reject friend request
-router.post('/reject', async (req, res) => {
-    const user = req.user;
-    const { requestId } = req.body;
-    if (!requestId)
-        return res.status(400).json({ error: 'Missing requestId' });
+router.patch('/reject', (0, validation_1.validate)(respondRequestSchema), async (req, res, next) => {
     try {
-        const friendship = await prisma.friendship.update({
+        const user = req.user;
+        const { requestId } = req.body;
+        const friendship = await db_1.default.friendship.update({
             where: { id: requestId, addresseeId: user.id },
             data: { status: 'REJECTED' },
         });
         res.json({ friendship });
     }
     catch (e) {
-        res.status(500).json({ error: 'Failed to reject request' });
+        next(e);
     }
 });
 // List friends
-router.get('/list', async (req, res) => {
-    const user = req.user;
-    const friends = await prisma.friendship.findMany({
-        where: {
-            OR: [
-                { requesterId: user.id, status: 'ACCEPTED' },
-                { addresseeId: user.id, status: 'ACCEPTED' },
-            ],
-        },
-        include: {
-            requester: true,
-            addressee: true,
-        },
-    });
-    res.json({ friends });
+router.get('/list', async (req, res, next) => {
+    try {
+        const user = req.user;
+        const friends = await db_1.default.friendship.findMany({
+            where: {
+                OR: [
+                    { requesterId: user.id, status: 'ACCEPTED' },
+                    { addresseeId: user.id, status: 'ACCEPTED' },
+                ],
+            },
+            include: {
+                requester: true,
+                addressee: true,
+            },
+        });
+        res.json({ friends });
+    }
+    catch (e) {
+        next(e);
+    }
 });
 // List pending requests
-router.get('/pending', async (req, res) => {
-    const user = req.user;
-    const pending = await prisma.friendship.findMany({
-        where: {
-            addresseeId: user.id,
-            status: 'PENDING',
-        },
-        include: {
-            requester: true,
-        },
-    });
-    res.json({ pending });
+router.get('/pending', async (req, res, next) => {
+    try {
+        const user = req.user;
+        const pending = await db_1.default.friendship.findMany({
+            where: {
+                addresseeId: user.id,
+                status: 'PENDING',
+            },
+            include: {
+                requester: true,
+            },
+        });
+        res.json({ pending });
+    }
+    catch (e) {
+        next(e);
+    }
 });
 exports.default = router;

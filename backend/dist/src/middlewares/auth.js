@@ -1,15 +1,18 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authenticateUser = void 0;
-const prisma_1 = require("../generated/prisma");
-const prisma = new prisma_1.PrismaClient();
+const db_1 = __importDefault(require("../db"));
+const HttpError_1 = __importDefault(require("../HttpError"));
 const authenticateUser = async (req, res, next) => {
     const telegramId = req.header('x-telegram-id');
     if (!telegramId)
-        return res.status(401).json({ error: 'Missing x-telegram-id header' });
-    const user = await prisma.user.findUnique({ where: { telegramId: BigInt(telegramId) } });
+        return next(new HttpError_1.default(401, 'Missing x-telegram-id header'));
+    const user = await db_1.default.user.findUnique({ where: { telegramId: BigInt(telegramId) } });
     if (!user)
-        return res.status(401).json({ error: 'User not found' });
+        return next(new HttpError_1.default(401, 'User not found'));
     req.user = user;
     next();
 };

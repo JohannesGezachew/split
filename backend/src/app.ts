@@ -7,6 +7,7 @@ import * as middlewares from './middlewares';
 import api from './api';
 import MessageResponse from './interfaces/MessageResponse';
 import { authenticateUser } from './middlewares/auth';
+import { AuthRequest } from './interfaces/AuthRequest';
 
 const app = express();
 
@@ -21,7 +22,7 @@ app.get<Record<string, never>, MessageResponse>('/', (req, res) => {
   });
 });
 
-app.use('/api/v1', (req, res, next) => {
+app.use('/api/v1', (req: AuthRequest, res, next) => {
   if (req.path === '/users/upsert') {
     return next();
   }

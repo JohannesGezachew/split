@@ -1,19 +1,24 @@
-import express, { Request, Response } from 'express';
-import { PrismaClient, User } from '../generated/prisma';
 
-const prisma = new PrismaClient();
+import express, { NextFunction, Request, Response } from 'express';
+import { z } from 'zod';
+import { User } from '../generated/prisma';
+import prisma from '../db';
+
+import { validate } from '../middlewares/validation';
+
 const router = express.Router();
 
-interface CreateGroupRequest {
-  name: string;
-}
+const createGroupSchema = z.object({
+  body: z.object({
+    name: z.string(),
+  }),
+});
 
 // Create group
-router.post('/create', async (req: Request<object, object, CreateGroupRequest>, res: Response) => {
-  const user = (req as Request & { user: User }).user;
-  const { name } = req.body;
-  if (!name) return res.status(400).json({ error: 'Missing group name' });
+router.post('/create', validate(createGroupSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const user = (req as Request & { user: User }).user;
+    const { name } = req.body;
     const group = await prisma.group.create({
       data: {
         name,
@@ -23,70 +28,83 @@ router.post('/create', async (req: Request<object, object, CreateGroupRequest>, 
     });
     res.json({ group });
   } catch (e) {
-    res.status(500).json({ error: 'Failed to create group' });
+    next(e);
   }
 });
 
-interface JoinGroupRequest {
-  groupId: number;
-}
+const joinGroupSchema = z.object({
+  body: z.object({
+    groupId: z.number(),
+  }),
+});
 
 // Join group
-router.post('/join', async (req: Request<object, object, JoinGroupRequest>, res: Response) => {
-  const user = (req as Request & { user: User }).user;
-  const { groupId } = req.body;
-  if (!groupId) return res.status(400).json({ error: 'Missing groupId' });
+router.post('/join', validate(joinGroupSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const user = (req as Request & { user: User }).user;
+    const { groupId } = req.body;
     const member = await prisma.groupMember.create({
       data: { userId: user.id, groupId },
     });
     res.json({ member });
   } catch (e) {
-    res.status(500).json({ error: 'Failed to join group' });
+    next(e);
   }
 });
 
-interface LeaveGroupRequest {
-  groupId: number;
-}
+const leaveGroupSchema = z.object({
+  body: z.object({
+    groupId: z.number(),
+  }),
+});
 
 // Leave group
-router.post('/leave', async (req: Request<object, object, LeaveGroupRequest>, res: Response) => {
-  const user = (req as Request & { user: User }).user;
-  const { groupId } = req.body;
-  if (!groupId) return res.status(400).json({ error: 'Missing groupId' });
+router.delete('/leave', validate(leaveGroupSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const user = (req as Request & { user: User }).user;
+    const { groupId } = req.body;
     await prisma.groupMember.deleteMany({
       where: { userId: user.id, groupId },
     });
     res.json({ success: true });
   } catch (e) {
-    res.status(500).json({ error: 'Failed to leave group' });
+    next(e);
   }
 });
 
 // List groups for user
-router.get('/list', async (req: Request, res: Response) => {
-  const user = (req as Request & { user: User }).user;
-  const groups = await prisma.groupMember.findMany({
-    where: { userId: user.id },
-    include: { group: true },
-  });
-  res.json({ groups });
+router.get('/list', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as Request & { user: User }).user;
+    const groups = await prisma.groupMember.findMany({
+      where: { userId: user.id },
+      include: { group: true },
+    });
+    res.json({ groups });
+  } catch (e) {
+    next(e);
+  }
 });
 
-interface GroupMembersParams {
-  groupId: string;
-}
+const groupMembersSchema = z.object({
+  params: z.object({
+    groupId: z.string(),
+  }),
+});
 
 // List group members
-router.get('/:groupId/members', async (req: Request<GroupMembersParams>, res: Response) => {
-  const { groupId } = req.params;
-  const members = await prisma.groupMember.findMany({
-    where: { groupId: Number(groupId) },
-    include: { user: true },
-  });
-  res.json({ members });
+router.get('/:groupId/members', validate(groupMembersSchema), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { groupId } = req.params;
+    const members = await prisma.groupMember.findMany({
+      where: { groupId: Number(groupId) },
+      include: { user: true },
+    });
+    res.json({ members });
+  } catch (e) {
+    next(e);
+  }
 });
 
-export default router; 
+export default router;
+ 

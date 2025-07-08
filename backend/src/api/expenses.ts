@@ -1,23 +1,31 @@
-import express, { Request, Response } from 'express';
-import { PrismaClient, User } from '../generated/prisma';
 
-const prisma = new PrismaClient();
+import express, { NextFunction, Request, Response } from 'express';
+import { z } from 'zod';
+import { User } from '../generated/prisma';
+import prisma from '../db';
+
+import { validate } from '../middlewares/validation';
+
 const router = express.Router();
 
-interface AddExpenseRequest {
-  amount: number;
-  groupId?: number;
-  splits: { userId: number; amount: number }[];
-  note?: string;
-  date?: string;
-}
+const addExpenseSchema = z.object({
+  body: z.object({
+    amount: z.number(),
+    groupId: z.number().optional(),
+    splits: z.array(z.object({
+      userId: z.number(),
+      amount: z.number(),
+    })),
+    note: z.string().optional(),
+    date: z.string().optional(),
+  }),
+});
 
 // Add expense (group or individual)
-router.post('/add', async (req: Request<object, object, AddExpenseRequest>, res: Response) => {
-  const user = (req as Request & { user: User }).user;
-  const { amount, groupId, splits, note, date } = req.body;
-  if (!amount || !splits || !Array.isArray(splits)) return res.status(400).json({ error: 'Missing or invalid amount/splits' });
+router.post('/add', validate(addExpenseSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const user = (req as Request & { user: User }).user;
+    const { amount, groupId, splits, note, date } = req.body;
     const expense = await prisma.expense.create({
       data: {
         amount,
@@ -33,27 +41,34 @@ router.post('/add', async (req: Request<object, object, AddExpenseRequest>, res:
     });
     res.json({ expense });
   } catch (e) {
-    res.status(500).json({ error: 'Failed to add expense' });
+    next(e);
   }
 });
 
-interface HistoryQuery {
-  groupId?: string;
-}
-
-// Expense history (per user, per group)
-router.get('/history', async (req: Request<object, object, object, HistoryQuery>, res: Response) => {
-  const user = (req as Request & { user: User }).user;
-  const { groupId } = req.query;
-  const where: { OR: ({ paidById: number; } | { splits: { some: { userId: number; }; }; })[]; groupId?: number; } = { OR: [{ paidById: user.id }, { splits: { some: { userId: user.id } } }] };
-  if (groupId) where.groupId = Number(groupId);
-  const expenses = await prisma.expense.findMany({
-    where,
-    include: { splits: true },
-    orderBy: { date: 'desc' },
-    take: 50,
-  });
-  res.json({ expenses });
+const historySchema = z.object({
+  query: z.object({
+    groupId: z.string().optional(),
+  }),
 });
 
-export default router; 
+// Expense history (per user, per group)
+router.get('/history', validate(historySchema), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as Request & { user: User }).user;
+    const { groupId } = req.query;
+    const where: { OR: ({ paidById: number; } | { splits: { some: { userId: number; }; }; })[]; groupId?: number; } = { OR: [{ paidById: user.id }, { splits: { some: { userId: user.id } } }] };
+    if (groupId) where.groupId = Number(groupId);
+    const expenses = await prisma.expense.findMany({
+      where,
+      include: { splits: true },
+      orderBy: { date: 'desc' },
+      take: 50,
+    });
+    res.json({ expenses });
+  } catch (e) {
+    next(e);
+  }
+});
+
+export default router;
+ 

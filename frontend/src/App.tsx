@@ -27,16 +27,21 @@ function App() {
     tg.ready(); // Ensure the WebApp is ready
 
     const tgUser = tg.initDataUnsafe?.user;
-    if (!tgUser) {
-      setError('Telegram user info not available. Please try again from Telegram.');
+    const initData = tg.initData; // Get the initData
+
+    if (!tgUser || !initData) { // Also check for initData
+      setError('Telegram user info or init data not available. Please try again from Telegram.');
       setLoading(false);
       return;
     }
+
+    // Send initData along with user info
     api.post('/api/v1/users/upsert', {
       telegramId: tgUser.id.toString(),
       username: tgUser.username,
       firstName: tgUser.first_name,
       lastName: tgUser.last_name,
+      initData: initData, // Include initData here
     }, { headers: { 'x-telegram-id': tgUser.id } })
       .then(res => {
         setUser(res.data.user)

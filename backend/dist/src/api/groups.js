@@ -4,17 +4,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const prisma_1 = require("../generated/prisma");
-const prisma = new prisma_1.PrismaClient();
+const zod_1 = require("zod");
+const db_1 = __importDefault(require("../db"));
+const validation_1 = require("../middlewares/validation");
 const router = express_1.default.Router();
+const createGroupSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        name: zod_1.z.string(),
+    }),
+});
 // Create group
-router.post('/create', async (req, res) => {
-    const user = req.user;
-    const { name } = req.body;
-    if (!name)
-        return res.status(400).json({ error: 'Missing group name' });
+router.post('/create', (0, validation_1.validate)(createGroupSchema), async (req, res, next) => {
     try {
-        const group = await prisma.group.create({
+        const user = req.user;
+        const { name } = req.body;
+        const group = await db_1.default.group.create({
             data: {
                 name,
                 members: { create: { userId: user.id } },
@@ -24,57 +28,78 @@ router.post('/create', async (req, res) => {
         res.json({ group });
     }
     catch (e) {
-        res.status(500).json({ error: 'Failed to create group' });
+        next(e);
     }
 });
+const joinGroupSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        groupId: zod_1.z.number(),
+    }),
+});
 // Join group
-router.post('/join', async (req, res) => {
-    const user = req.user;
-    const { groupId } = req.body;
-    if (!groupId)
-        return res.status(400).json({ error: 'Missing groupId' });
+router.post('/join', (0, validation_1.validate)(joinGroupSchema), async (req, res, next) => {
     try {
-        const member = await prisma.groupMember.create({
+        const user = req.user;
+        const { groupId } = req.body;
+        const member = await db_1.default.groupMember.create({
             data: { userId: user.id, groupId },
         });
         res.json({ member });
     }
     catch (e) {
-        res.status(500).json({ error: 'Failed to join group' });
+        next(e);
     }
 });
+const leaveGroupSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        groupId: zod_1.z.number(),
+    }),
+});
 // Leave group
-router.post('/leave', async (req, res) => {
-    const user = req.user;
-    const { groupId } = req.body;
-    if (!groupId)
-        return res.status(400).json({ error: 'Missing groupId' });
+router.delete('/leave', (0, validation_1.validate)(leaveGroupSchema), async (req, res, next) => {
     try {
-        await prisma.groupMember.deleteMany({
+        const user = req.user;
+        const { groupId } = req.body;
+        await db_1.default.groupMember.deleteMany({
             where: { userId: user.id, groupId },
         });
         res.json({ success: true });
     }
     catch (e) {
-        res.status(500).json({ error: 'Failed to leave group' });
+        next(e);
     }
 });
 // List groups for user
-router.get('/list', async (req, res) => {
-    const user = req.user;
-    const groups = await prisma.groupMember.findMany({
-        where: { userId: user.id },
-        include: { group: true },
-    });
-    res.json({ groups });
+router.get('/list', async (req, res, next) => {
+    try {
+        const user = req.user;
+        const groups = await db_1.default.groupMember.findMany({
+            where: { userId: user.id },
+            include: { group: true },
+        });
+        res.json({ groups });
+    }
+    catch (e) {
+        next(e);
+    }
+});
+const groupMembersSchema = zod_1.z.object({
+    params: zod_1.z.object({
+        groupId: zod_1.z.string(),
+    }),
 });
 // List group members
-router.get('/:groupId/members', async (req, res) => {
-    const { groupId } = req.params;
-    const members = await prisma.groupMember.findMany({
-        where: { groupId: Number(groupId) },
-        include: { user: true },
-    });
-    res.json({ members });
+router.get('/:groupId/members', (0, validation_1.validate)(groupMembersSchema), async (req, res, next) => {
+    try {
+        const { groupId } = req.params;
+        const members = await db_1.default.groupMember.findMany({
+            where: { groupId: Number(groupId) },
+            include: { user: true },
+        });
+        res.json({ members });
+    }
+    catch (e) {
+        next(e);
+    }
 });
 exports.default = router;

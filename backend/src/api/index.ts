@@ -1,5 +1,10 @@
-import express from 'express';
-import { PrismaClient } from '../generated/prisma';
+
+
+import express, { NextFunction, Request, Response } from 'express';
+import { z } from 'zod';
+import prisma from '../db';
+import HttpError from '../HttpError';
+import { validate } from '../middlewares/validation';
 
 import MessageResponse from '../interfaces/MessageResponse';
 import emojis from './emojis';
@@ -12,27 +17,24 @@ import { authenticateUser } from '../middlewares/auth';
 
 const router = express.Router();
 
-const prisma = new PrismaClient();
-
 router.get<Record<string, never>, MessageResponse>('/', (req, res) => {
   res.json({
     message: 'API - 👋🌎🌍🌏',
   });
 });
 
-interface TelegramAuthRequest {
-  id: string;
-  username: string;
-  first_name: string;
-  last_name: string;
-}
+const telegramAuthSchema = z.object({
+  body: z.object({
+    id: z.string(),
+    username: z.string(),
+    first_name: z.string(),
+    last_name: z.string(),
+  }),
+});
 
-router.post('/auth/telegram', async (req, res) => {
-  const { id, username, first_name: firstName, last_name: lastName } = req.body as TelegramAuthRequest;
-  if (!id || !firstName) {
-    return res.status(400).json({ error: 'Missing required Telegram user info.' });
-  }
+router.post('/auth/telegram', validate(telegramAuthSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { id, username, first_name: firstName, last_name: lastName } = req.body;
     const user = await prisma.user.upsert({
       where: { telegramId: BigInt(id) },
       update: {
@@ -49,7 +51,7 @@ router.post('/auth/telegram', async (req, res) => {
     });
     res.json({ user });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to upsert user.' });
+    next(new HttpError(500, 'Failed to upsert user.'));
   }
 });
 
@@ -64,3 +66,5 @@ router.use('/expenses', expenses);
 router.use('/debts', debts);
 
 export default router;
+
+
