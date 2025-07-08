@@ -12,9 +12,7 @@ const app = express();
 
 app.use(morgan('dev'));
 app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-}));
+app.use(cors());
 app.use(express.json());
 
 app.get<Record<string, never>, MessageResponse>('/', (req, res) => {
@@ -23,12 +21,7 @@ app.get<Record<string, never>, MessageResponse>('/', (req, res) => {
   });
 });
 
-app.use('/api/v1', (req, res, next) => {
-  if (req.path === '/users/upsert') {
-    return next();
-  }
-  authenticateUser(req, res, next);
-}, api);
+app.use('/api/v1', authenticateUser, api);
 
 app.use(middlewares.notFound);
 app.use(middlewares.errorHandler);

@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int            @id @default(autoincrement())
+  telegramId           BigInt         @unique
+  username             String?
+  firstName            String
+  lastName             String?
+  createdAt            DateTime       @default(now())
+  requestedFriendships Friendship[]   @relation("RequestedFriendships")
+  receivedFriendships  Friendship[]   @relation("ReceivedFriendships")
+  expenses             Expense[]      @relation("UserExpenses")
+  groups               GroupMember[]
+  notifications        Notification[]
+  splits               Split[]
+  debtsFrom            Debt[]         @relation("DebtFromUser")
+  debtsTo              Debt[]         @relation("DebtToUser")
+}
+
+model Friendship {
+  id          Int              @id @default(autoincrement())
+  requester   User             @relation("RequestedFriendships", fields: [requesterId], references: [id])
+  requesterId Int
+  addressee   User             @relation("ReceivedFriendships", fields: [addresseeId], references: [id])
+  addresseeId Int
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model Group {
+  id        Int           @id @default(autoincrement())
+  name      String
+  createdAt DateTime      @default(now())
+  members   GroupMember[]
+  expenses  Expense[]
+}
+
+model GroupMember {
+  id      Int   @id @default(autoincrement())
+  user    User  @relation(fields: [userId], references: [id])
+  userId  Int
+  group   Group @relation(fields: [groupId], references: [id])
+  groupId Int
+}
+
+model Expense {
+  id       Int      @id @default(autoincrement())
+  amount   Float
+  paidBy   User     @relation("UserExpenses", fields: [paidById], references: [id])
+  paidById Int
+  group    Group?   @relation(fields: [groupId], references: [id])
+  groupId  Int?
+  note     String?
+  date     DateTime @default(now())
+  splits   Split[]
+  debts    Debt[]
+}
+
+model Split {
+  id        Int     @id @default(autoincrement())
+  expense   Expense @relation(fields: [expenseId], references: [id])
+  expenseId Int
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  amount    Float
+}
+
+model Debt {
+  id         Int      @id @default(autoincrement())
+  fromUser   User     @relation("DebtFromUser", fields: [fromUserId], references: [id])
+  fromUserId Int
+  toUser     User     @relation("DebtToUser", fields: [toUserId], references: [id])
+  toUserId   Int
+  amount     Float
+  expense    Expense  @relation(fields: [expenseId], references: [id])
+  expenseId  Int
+  settled    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  type      String
+  payload   String?
+  sent      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
