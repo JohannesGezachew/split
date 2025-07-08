@@ -44,8 +44,13 @@ function App() {
       initData: initData, // Include initData here
     }, { headers: { 'x-telegram-id': tgUser.id } })
       .then(res => {
-        setUser(res.data.user)
-        setLoading(false)
+        const authenticatedUser = res.data.user;
+        setUser(authenticatedUser);
+        // Store telegramId in localStorage
+        if (authenticatedUser && authenticatedUser.telegramId) {
+          localStorage.setItem('telegramId', authenticatedUser.telegramId.toString());
+        }
+        setLoading(false);
       })
       .catch((err) => {
         console.error('Backend authentication error:', err);
